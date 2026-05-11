@@ -76,7 +76,7 @@ export default function Home() {
           >
             <span>Daily Challenge</span>
             <span className="text-sm opacity-70 font-normal">
-              {dailyStreak.count > 0 ? `${dailyStreak.count} day streak 🔥` : 'Make 24'}
+              {dailyStreak.count > 0 ? `${dailyStreak.count} day streak 🔥` : 'Click to Play'}
             </span>
           </Button>
 
