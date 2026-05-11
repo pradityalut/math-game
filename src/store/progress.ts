@@ -5,6 +5,7 @@ import type { LevelResult, PlayerProgress } from '../engine/types'
 interface ProgressActions {
   recordSolve: (id: string, stars: 1 | 2 | 3) => void
   recordDailyPlay: (date: string) => void
+  markVisited: (id: string) => void
   isUnlocked: (id: string) => boolean
   getLevelResult: (id: string) => LevelResult | undefined
   resetAll: () => void
@@ -29,6 +30,7 @@ export const useProgress = create<ProgressStore>()(
           const prev = s.levels[id]
           const newResult: LevelResult = {
             solved: true,
+            visited: true,
             stars: (Math.max(stars, prev?.stars ?? 0) as 0 | 1 | 2 | 3),
             solvedAt: new Date().toISOString(),
           }
@@ -48,8 +50,22 @@ export const useProgress = create<ProgressStore>()(
         })
       },
 
-      isUnlocked(_id) {
-        return true
+      markVisited(id) {
+        set((s) => {
+          const existing = s.levels[id]
+          if (existing?.visited || existing?.solved) return s
+          return {
+            levels: {
+              ...s.levels,
+              [id]: { solved: false, visited: true, stars: 0, solvedAt: '' },
+            },
+          }
+        })
+      },
+
+      isUnlocked(id) {
+        const result = get().levels[id]
+        return result?.visited === true || result?.solved === true
       },
 
       getLevelResult(id) {

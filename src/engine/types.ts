@@ -23,6 +23,7 @@ export interface Level extends LevelSlot {
 
 export interface LevelResult {
   solved: boolean
+  visited: boolean
   stars: 0 | 1 | 2 | 3
   solvedAt: string
 }

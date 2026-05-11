@@ -24,7 +24,7 @@ export default function LevelCard({ level, result, unlocked }: LevelCardProps) {
       aria-label={`Level ${level.index}${!unlocked ? ', locked' : result?.solved ? `, ${result.stars} stars` : ''}`}
       className={cn(
         'relative flex flex-col items-center justify-center gap-1 rounded-xl p-2',
-        'w-full aspect-square transition-all duration-100',
+        'w-full h-[80px] transition-all duration-100',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C84B31]',
         unlocked && !result?.solved && 'cursor-pointer',
         unlocked && result?.solved && 'cursor-pointer',
@@ -80,7 +80,7 @@ export default function LevelCard({ level, result, unlocked }: LevelCardProps) {
       >
         {level.index}
       </span>
-      {result?.solved && <StarRow stars={result.stars} size="sm" />}
+      {result?.solved && <StarRow stars={result.stars} size="xs" />}
     </button>
   )
 }

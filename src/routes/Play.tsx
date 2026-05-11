@@ -32,7 +32,7 @@ const OP_LABELS: Record<Op, string> = { '+': '+', '-': '−', '*': '×', '/': '�
 export default function Play({ levelOverride, onSolve }: PlayProps) {
   const { tier, level: levelIdx } = useParams()
   const navigate = useNavigate()
-  const { recordSolve } = useProgress()
+  const { recordSolve, markVisited } = useProgress()
   const { addScore, getTierScore } = useSession()
 
   const slot: LevelSlot | undefined = levelOverride
@@ -98,6 +98,12 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
     elapsedRef.current = 0
     setPointsEarned(0)
   }, [levelOverride?.id])
+
+  // Mark level as visited once the full level object is ready
+  useEffect(() => {
+    if (!level) return
+    markVisited(level.id)
+  }, [level?.id])
 
   function startIfNeeded() {
     if (!running && !solved && !expired) setRunning(true)
@@ -182,7 +188,7 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
 
   const nextLevelPath = useCallback(() => {
     if (!level || level.id.startsWith('daily')) return null
-    if (level.index >= 10) return null
+    if (level.index >= 8) return null
     return `/play/${level.tier}/${level.index + 1}`
   }, [level])
 
@@ -197,177 +203,181 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
   const submitDisabled = !complete || !wellFormed || !allUsed || solved || expired
 
   return (
-    <div className="flex flex-col min-h-dvh max-w-md mx-auto px-4 py-5 gap-5">
-      {/* Top bar */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center gap-1 text-[#78716C] hover:text-[#1C1917] transition-colors cursor-pointer text-sm font-medium py-2 -ml-1 pr-2"
-          style={{ fontFamily: "'Nunito', sans-serif" }}
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-          </svg>
-          Menu
-        </button>
+    <div className="min-h-dvh px-4 md:px-8 py-5">
+      <div className="grid grid-cols-12">
+        <div className="col-span-12 md:col-start-3 md:col-span-8 lg:col-start-4 lg:col-span-6 flex flex-col gap-5">
+          {/* Top bar */}
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center gap-1 text-[#78716C] hover:text-[#1C1917] transition-colors cursor-pointer text-sm font-medium py-2 -ml-1 pr-2"
+              style={{ fontFamily: "'Nunito', sans-serif" }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+              </svg>
+              Menu
+            </button>
 
-        <span
-          className="text-xs font-semibold uppercase tracking-wider text-[#78716C] px-3 py-1.5 rounded-full"
-          style={{ background: '#EDE7DF', fontFamily: "'Nunito', sans-serif" }}
-        >
-          {tierLabel}
-        </span>
+            <span
+              className="text-xs font-semibold uppercase tracking-wider text-[#78716C] px-3 py-1.5 rounded-full"
+              style={{ background: '#EDE7DF', fontFamily: "'Nunito', sans-serif" }}
+            >
+              {tierLabel}
+            </span>
 
-        <span
-          className="text-sm font-bold tabular-nums px-3 py-1.5 rounded-full"
-          style={{
-            fontFamily: "'Fredoka', sans-serif",
-            background: elapsedSec / level.timeLimitSec > 0.75 ? '#FCE7E1' : '#EDE7DF',
-            color: elapsedSec / level.timeLimitSec > 0.75 ? '#C84B31' : '#1C1917',
-            minWidth: 60,
-            textAlign: 'center',
-          }}
-        >
-          {Math.max(0, Math.ceil(level.timeLimitSec - elapsedSec))}s
-        </span>
-      </div>
+            <span
+              className="text-sm font-bold tabular-nums px-3 py-1.5 rounded-full"
+              style={{
+                fontFamily: "'Fredoka', sans-serif",
+                background: elapsedSec / level.timeLimitSec > 0.75 ? '#FCE7E1' : '#EDE7DF',
+                color: elapsedSec / level.timeLimitSec > 0.75 ? '#C84B31' : '#1C1917',
+                minWidth: 60,
+                textAlign: 'center',
+              }}
+            >
+              {Math.max(0, Math.ceil(level.timeLimitSec - elapsedSec))}s
+            </span>
+          </div>
 
-      {/* Timer */}
-      <TimerBar
-        totalSec={level.timeLimitSec}
-        running={running}
-        onTick={handleTick}
-        onExpire={handleExpire}
-      />
+          {/* Timer */}
+          <TimerBar
+            totalSec={level.timeLimitSec}
+            running={running}
+            onTick={handleTick}
+            onExpire={handleExpire}
+          />
 
-      {/* Target + Numbers */}
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <div
-            className="text-[0.65rem] font-semibold uppercase tracking-widest text-[#A09080] mb-0.5"
+          {/* Target + Numbers */}
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <div
+                className="text-[0.65rem] font-semibold uppercase tracking-widest text-[#A09080] mb-0.5"
+                style={{ fontFamily: "'Nunito', sans-serif" }}
+              >
+                Target
+              </div>
+              <div
+                className="text-7xl font-bold leading-none text-[#C84B31]"
+                style={{ fontFamily: "'Fredoka', sans-serif" }}
+              >
+                {level.target}
+              </div>
+            </div>
+
+            <div className="flex flex-col items-end gap-1.5">
+              <span
+                className="text-[0.65rem] font-semibold uppercase tracking-widest text-[#A09080]"
+                style={{ fontFamily: "'Nunito', sans-serif" }}
+              >
+                Numbers
+              </span>
+              <div className="flex gap-1.5 flex-wrap justify-end">
+                {level.numbers.map((n, idx) => (
+                  <NumberChip
+                    key={idx}
+                    value={n}
+                    used={usedChips.has(idx)}
+                    onClick={() => handleNumber(idx, n)}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Expression field */}
+          <div className={cn(submitFeedback && !submitFeedback.correct && 'animate-[shake_400ms_ease]')}>
+            <ExpressionField
+              tokens={tokens}
+              state={fieldState}
+              submitFeedback={submitFeedback}
+            />
+          </div>
+
+          {/* Operators row */}
+          <div className="grid grid-cols-6 gap-2">
+            {(['+', '-', '*', '/'] as Op[])
+              .filter((op) => level.allowedOps.includes(op))
+              .map((op) => (
+                <KeyButton key={op} label={OP_LABELS[op]} onClick={() => handleOp(op)} />
+              ))}
+            <KeyButton label="(" onClick={() => handleParen('(')} />
+            <KeyButton label=")" onClick={() => handleParen(')')} />
+          </div>
+
+          {/* Backspace + Clear */}
+          <div className="grid grid-cols-2 gap-2">
+            <KeyButton label="⌫" onClick={handleBackspace} disabled={tokens.length === 0} />
+            <KeyButton label="Clear" onClick={handleClear} disabled={tokens.length === 0} />
+          </div>
+
+          {/* Helper text */}
+          <p
+            className="text-xs text-[#A09080] leading-relaxed"
             style={{ fontFamily: "'Nunito', sans-serif" }}
           >
-            Target
+            Use <strong className="text-[#1C1917]">all {level.numbers.length} numbers</strong> exactly once. Tap operators and parentheses to build the expression. Every intermediate result must be a whole number.
+          </p>
+
+          {/* Bottom action bar */}
+          <div className="flex gap-3 mt-auto">
+            <button
+              onClick={handleSubmit}
+              disabled={submitDisabled}
+              className={cn(
+                'flex-1 py-3 rounded-xl font-bold text-base text-white transition-all duration-100',
+                !submitDisabled && 'cursor-pointer',
+              )}
+              style={{
+                fontFamily: "'Fredoka', sans-serif",
+                fontSize: '1.05rem',
+                background: submitDisabled ? '#D4C8BA' : '#2D6A4F',
+                borderBottom: submitDisabled
+                  ? '4px solid #C8B8A2'
+                  : '4px solid #1D4A37',
+              }}
+              onMouseDown={(e) => {
+                if (submitDisabled) return
+                e.currentTarget.style.transform = 'translateY(3px)'
+                e.currentTarget.style.borderBottomWidth = '1px'
+              }}
+              onMouseUp={(e) => {
+                if (submitDisabled) return
+                e.currentTarget.style.transform = ''
+                e.currentTarget.style.borderBottomWidth = '4px'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = ''
+                e.currentTarget.style.borderBottomWidth = '4px'
+              }}
+            >
+              {submitFlash === 'incomplete' ? 'Use all numbers' : 'Submit'}
+            </button>
           </div>
-          <div
-            className="text-7xl font-bold leading-none text-[#C84B31]"
-            style={{ fontFamily: "'Fredoka', sans-serif" }}
-          >
-            {level.target}
-          </div>
-        </div>
 
-        <div className="flex flex-col items-end gap-1.5">
-          <span
-            className="text-[0.65rem] font-semibold uppercase tracking-widest text-[#A09080]"
-            style={{ fontFamily: "'Nunito', sans-serif" }}
-          >
-            Numbers
-          </span>
-          <div className="flex gap-1.5 flex-wrap justify-end">
-            {level.numbers.map((n, idx) => (
-              <NumberChip
-                key={idx}
-                value={n}
-                used={usedChips.has(idx)}
-                onClick={() => handleNumber(idx, n)}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Expression field */}
-      <div className={cn(submitFeedback && !submitFeedback.correct && 'animate-[shake_400ms_ease]')}>
-        <ExpressionField
-          tokens={tokens}
-          state={fieldState}
-          submitFeedback={submitFeedback}
-        />
-      </div>
-
-      {/* Operators row */}
-      <div className="grid grid-cols-6 gap-2">
-        {(['+', '-', '*', '/'] as Op[])
-          .filter((op) => level.allowedOps.includes(op))
-          .map((op) => (
-            <KeyButton key={op} label={OP_LABELS[op]} onClick={() => handleOp(op)} />
-          ))}
-        <KeyButton label="(" onClick={() => handleParen('(')} />
-        <KeyButton label=")" onClick={() => handleParen(')')} />
-      </div>
-
-      {/* Backspace + Clear */}
-      <div className="grid grid-cols-2 gap-2">
-        <KeyButton label="⌫" onClick={handleBackspace} disabled={tokens.length === 0} />
-        <KeyButton label="Clear" onClick={handleClear} disabled={tokens.length === 0} />
-      </div>
-
-      {/* Helper text */}
-      <p
-        className="text-xs text-[#A09080] leading-relaxed"
-        style={{ fontFamily: "'Nunito', sans-serif" }}
-      >
-        Use <strong className="text-[#1C1917]">all {level.numbers.length} numbers</strong> exactly once. Tap operators and parentheses to build the expression. Every intermediate result must be a whole number.
-      </p>
-
-      {/* Bottom action bar */}
-      <div className="flex gap-3 mt-auto">
-        <button
-          onClick={handleSubmit}
-          disabled={submitDisabled}
-          className={cn(
-            'flex-1 py-3 rounded-xl font-bold text-base text-white transition-all duration-100',
-            !submitDisabled && 'cursor-pointer',
+          {/* Expired */}
+          {expired && !solved && (
+            <ResultModal
+              expired
+              stars={0}
+              timeSec={Math.round(elapsedSec * 10) / 10}
+              nextLevelPath={nextLevelPath()}
+            />
           )}
-          style={{
-            fontFamily: "'Fredoka', sans-serif",
-            fontSize: '1.05rem',
-            background: submitDisabled ? '#D4C8BA' : '#2D6A4F',
-            borderBottom: submitDisabled
-              ? '4px solid #C8B8A2'
-              : '4px solid #1D4A37',
-          }}
-          onMouseDown={(e) => {
-            if (submitDisabled) return
-            e.currentTarget.style.transform = 'translateY(3px)'
-            e.currentTarget.style.borderBottomWidth = '1px'
-          }}
-          onMouseUp={(e) => {
-            if (submitDisabled) return
-            e.currentTarget.style.transform = ''
-            e.currentTarget.style.borderBottomWidth = '4px'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = ''
-            e.currentTarget.style.borderBottomWidth = '4px'
-          }}
-        >
-          {submitFlash === 'incomplete' ? 'Use all numbers' : 'Submit'}
-        </button>
+
+          {/* Solved */}
+          {solved && shareData && (
+            <ResultModal
+              timeSec={Math.round(elapsedSec * 10) / 10}
+              stars={calcStars(elapsedSec, level.timeLimitSec) as 1 | 2 | 3}
+              nextLevelPath={nextLevelPath()}
+              shareData={shareData}
+              pointsEarned={!level.id.startsWith('daily') ? pointsEarned : undefined}
+              tierTotal={!level.id.startsWith('daily') ? getTierScore(level.tier) : undefined}
+            />
+          )}
+        </div>
       </div>
-
-      {/* Expired */}
-      {expired && !solved && (
-        <ResultModal
-          expired
-          stars={0}
-          timeSec={Math.round(elapsedSec * 10) / 10}
-          nextLevelPath={nextLevelPath()}
-        />
-      )}
-
-      {/* Solved */}
-      {solved && shareData && (
-        <ResultModal
-          timeSec={Math.round(elapsedSec * 10) / 10}
-          stars={calcStars(elapsedSec, level.timeLimitSec) as 1 | 2 | 3}
-          nextLevelPath={nextLevelPath()}
-          shareData={shareData}
-          pointsEarned={!level.id.startsWith('daily') ? pointsEarned : undefined}
-          tierTotal={!level.id.startsWith('daily') ? getTierScore(level.tier) : undefined}
-        />
-      )}
     </div>
   )
 }
