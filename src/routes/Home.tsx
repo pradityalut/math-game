@@ -3,33 +3,30 @@ import { useNavigate } from 'react-router-dom'
 import { useProgress } from '../store/progress'
 import { useSession } from '../store/session'
 import LevelCard from '../components/LevelCard'
-import { cn } from '../lib/cn'
+import { Button, Tabs, Card } from '../components/ui'
+import type { TabSpec } from '../components/ui'
 import levels from '../data/levels.json'
 import type { Tier, LevelSlot } from '../engine/types'
 
-const TIERS: { id: Tier; label: string; color: string; activeStyle: React.CSSProperties }[] = [
+const TIERS: TabSpec<Tier>[] = [
   {
     id: 'easy',
     label: 'Easy',
-    color: 'text-[#2D6A4F]',
     activeStyle: { background: '#2D6A4F', color: '#fff', borderBottom: '3px solid #1D4A37' },
   },
   {
     id: 'medium',
     label: 'Medium',
-    color: 'text-[#D97706]',
     activeStyle: { background: '#D97706', color: '#fff', borderBottom: '3px solid #B45309' },
   },
   {
     id: 'hard',
     label: 'Hard',
-    color: 'text-[#C84B31]',
     activeStyle: { background: '#C84B31', color: '#fff', borderBottom: '3px solid #9B3A25' },
   },
   {
     id: '24',
     label: 'Game 24',
-    color: 'text-[#5B21B6]',
     activeStyle: { background: '#5B21B6', color: '#fff', borderBottom: '3px solid #3B0F8C' },
   },
 ]
@@ -64,68 +61,44 @@ export default function Home() {
             </p>
             {totalSolved > 0 && (
               <p className="text-xs text-[#A09080] pt-0.5">
-                {totalSolved} / 32 levels solved
+                {totalSolved} / {levels.length} levels solved
               </p>
             )}
           </div>
 
           {/* Daily Challenge */}
-          <button
+          <Button
+            variant="dark"
+            size="lg"
+            fullWidth
             onClick={() => navigate('/play/24/daily')}
-            className="w-full py-4 rounded-2xl text-white font-semibold text-base cursor-pointer transition-all duration-150 flex items-center justify-between px-5"
-            style={{
-              fontFamily: "'Fredoka', sans-serif",
-              fontSize: '1.05rem',
-              background: '#1A1A2E',
-              borderBottom: '4px solid #0A0A1A',
-            }}
-            onMouseDown={(e) => { e.currentTarget.style.transform = 'translateY(3px)'; e.currentTarget.style.borderBottomWidth = '1px' }}
-            onMouseUp={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.borderBottomWidth = '4px' }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.borderBottomWidth = '4px' }}
+            className="flex items-center justify-between"
           >
             <span>Daily Challenge</span>
             <span className="text-sm opacity-70 font-normal">
               {dailyStreak.count > 0 ? `${dailyStreak.count} day streak 🔥` : 'Make 24'}
             </span>
-          </button>
+          </Button>
 
           {/* Tier Tabs */}
-          <div
-            className="flex rounded-xl p-1 gap-1"
-            style={{ background: '#EDE7DF', border: '1px solid #D4C8BA' }}
-          >
-            {TIERS.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setActiveTier(t.id)}
-                className={cn(
-                  'flex-1 py-2 rounded-lg font-semibold text-sm cursor-pointer transition-all duration-150',
-                  activeTier !== t.id && 'text-[#78716C] hover:text-[#1C1917]',
-                )}
-                style={{
-                  fontFamily: "'Fredoka', sans-serif",
-                  fontSize: '0.95rem',
-                  ...(activeTier === t.id ? t.activeStyle : {}),
-                }}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+          <Tabs<Tier> value={activeTier} onChange={setActiveTier} tabs={TIERS} />
 
           {/* Session score */}
           {sessionScore > 0 && (
-            <div
-              className="flex items-center justify-between px-4 py-2 rounded-xl"
-              style={{ background: '#E8F5EE', border: '1px solid #B7DFC9' }}
-            >
-              <span className="text-sm text-[#2D6A4F] font-medium" style={{ fontFamily: "'Nunito', sans-serif" }}>
+            <Card tone="success" className="flex items-center justify-between px-4 py-2">
+              <span
+                className="text-sm text-[#2D6A4F] font-medium"
+                style={{ fontFamily: "'Nunito', sans-serif" }}
+              >
                 Session score
               </span>
-              <span className="text-base font-bold text-[#2D6A4F]" style={{ fontFamily: "'Fredoka', sans-serif" }}>
+              <span
+                className="text-base font-bold text-[#2D6A4F]"
+                style={{ fontFamily: "'Fredoka', sans-serif" }}
+              >
                 {sessionScore} pts
               </span>
-            </div>
+            </Card>
           )}
 
           {/* Level Grid */}
