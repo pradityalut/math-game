@@ -50,6 +50,7 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
   const [expired, setExpired] = useState(false)
   const [solved, setSolved] = useState(false)
   const [elapsedSec, setElapsedSec] = useState(0)
+  const [countdown, setCountdown] = useState<number | null>(null)
   const [shareData, setShareData] = useState<ShareCardData | null>(null)
   const [submitFlash, setSubmitFlash] = useState<null | 'incomplete'>(null)
   const [submitFeedback, setSubmitFeedback] = useState<{ value: number; correct: boolean } | null>(null)
@@ -79,25 +80,40 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
     if (!slot) { navigate('/'); return }
     setGeneratedPuzzle(generatePuzzle(slot.tier))
     setTokens([])
-    setRunning(false)
     setExpired(false)
     setSolved(false)
     setElapsedSec(0)
     elapsedRef.current = 0
     setPointsEarned(0)
+    setRunning(false)
+    setCountdown(3)
   }, [slot?.id, levelOverride])
 
   // Reset UI state when daily level loads
   useEffect(() => {
     if (!levelOverride) return
     setTokens([])
-    setRunning(false)
     setExpired(false)
     setSolved(false)
     setElapsedSec(0)
     elapsedRef.current = 0
     setPointsEarned(0)
+    setRunning(false)
+    setCountdown(3)
   }, [levelOverride?.id])
+
+  // Countdown ticker: 3 → 2 → 1 → 0 ("GO!") → null + start
+  useEffect(() => {
+    if (countdown === null) return
+    if (countdown < 0) {
+      setCountdown(null)
+      setRunning(true)
+      return
+    }
+    const delay = countdown === 0 ? 400 : 1000
+    const t = setTimeout(() => setCountdown((c) => (c === null ? null : c - 1)), delay)
+    return () => clearTimeout(t)
+  }, [countdown])
 
   // Mark level as visited once the full level object is ready
   useEffect(() => {
@@ -105,16 +121,11 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
     markVisited(level.id)
   }, [level?.id])
 
-  function startIfNeeded() {
-    if (!running && !solved && !expired) setRunning(true)
-  }
-
   function handleTick(e: number) { elapsedRef.current = e; setElapsedSec(e) }
   function handleExpire() { setRunning(false); setExpired(true) }
 
   function pushToken(t: Token) {
-    startIfNeeded()
-    if (solved || expired) return
+    if (solved || expired || countdown !== null) return
     setSubmitFlash(null)
     setSubmitFeedback(null)
     setTokens((prev) => [...prev, t])
@@ -200,7 +211,7 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
     ? `Game 24 · ${level.index}`
     : `${level.tier.charAt(0).toUpperCase() + level.tier.slice(1)} · ${level.index}`
 
-  const submitDisabled = !complete || !wellFormed || !allUsed || solved || expired
+  const submitDisabled = !complete || !wellFormed || !allUsed || solved || expired || countdown !== null
 
   return (
     <div className="min-h-dvh px-4 md:px-8 py-5">
@@ -242,6 +253,7 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
 
           {/* Timer */}
           <TimerBar
+            key={level.id}
             totalSec={level.timeLimitSec}
             running={running}
             onTick={handleTick}
@@ -354,6 +366,28 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
               {submitFlash === 'incomplete' ? 'Use all numbers' : 'Submit'}
             </button>
           </div>
+
+          {/* Countdown overlay */}
+          {countdown !== null && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-[#1C1917]/55 backdrop-blur-[3px]"
+              aria-live="assertive"
+              aria-label={countdown === 0 ? 'Go' : `Starting in ${countdown}`}
+            >
+              <div
+                key={countdown}
+                className="font-bold leading-none text-white tabular-nums"
+                style={{
+                  fontFamily: "'Fredoka', sans-serif",
+                  fontSize: countdown === 0 ? '8rem' : '12rem',
+                  animation: 'popIn 380ms cubic-bezier(0.34,1.56,0.64,1)',
+                  textShadow: '0 8px 32px rgba(0,0,0,0.45)',
+                }}
+              >
+                {countdown === 0 ? 'GO!' : countdown}
+              </div>
+            </div>
+          )}
 
           {/* Expired */}
           {expired && !solved && (
