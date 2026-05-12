@@ -2,9 +2,9 @@
 Behavioral guidelines for Claude Code in this project.
 Bias toward caution over speed; for trivial tasks, use judgment.
 
-<!-- ## Project Navigation
+## Project Navigation
 - Consult [SYSTEM_MAP.md](SYSTEM_MAP.md) first when exploring unfamiliar code — it's the navigation index.
-- Update SYSTEM_MAP.md per its Section 6 checklist when structural changes warrant. -->
+- Update SYSTEM_MAP.md per its Section 6 checklist when structural changes warrant.
 
 ## Think Before Coding
 - State assumptions explicitly before implementing.
