@@ -1,7 +1,7 @@
 import type { HTMLAttributes, CSSProperties } from 'react'
 import { cn } from '../../lib/cn'
 
-export type BadgeTone = 'success' | 'muted' | 'warning' | 'danger'
+export type BadgeTone = 'success' | 'muted' | 'warning' | 'danger' | 'info' | 'win'
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   tone?: BadgeTone
@@ -13,6 +13,8 @@ const TONES: Record<BadgeTone, CSSProperties> = {
   muted: { background: '#F0EBE3', color: '#78716C' },
   warning: { background: '#FEF3C7', color: '#D97706' },
   danger: { background: '#FEE2E2', color: '#C84B31' },
+  info: { background: '#E0F2FF', color: '#4A9CC8' },
+  win: { background: '#F0FF8A', color: '#5A7000' },
 }
 
 export default function Badge({

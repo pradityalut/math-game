@@ -19,13 +19,14 @@ const STAR_MESSAGES: Record<0 | 1 | 2 | 3, string> = {
   0: "Time's Up!",
   1: 'Solved it!',
   2: 'Nice one!',
-  3: 'Brilliant!',
+  3: 'Perfect! 🔥',
 }
 
 export default function ResultModal({ timeSec, stars, nextLevelPath, shareData, pointsEarned, tierTotal, expired }: ResultModalProps) {
   const navigate = useNavigate()
   const [sharing, setSharing] = useState(false)
   const [shared, setShared] = useState(false)
+  const isPerfect = stars === 3
 
   async function handleShare() {
     if (!shareData) return
@@ -50,14 +51,14 @@ export default function ResultModal({ timeSec, stars, nextLevelPath, shareData, 
   }
 
   return (
-    <Dialog>
+    <Dialog isPerfect={isPerfect}>
       {/* Header */}
       <div className="text-center space-y-1">
         <p
           className="text-4xl font-bold"
           style={{
             fontFamily: "'Fredoka', sans-serif",
-            color: expired ? '#C84B31' : '#1C1917',
+            color: expired ? '#C84B31' : isPerfect ? '#1C1917' : '#1C1917',
           }}
         >
           {STAR_MESSAGES[stars]}

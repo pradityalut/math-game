@@ -44,9 +44,19 @@ export default function TimerBar({ totalSec, running, onTick, onExpire }: TimerB
   const remaining = Math.max(0, Math.ceil(totalSec - elapsed))
 
   const barColor =
-    pct > 0.5 ? '#2D6A4F' :
-    pct > 0.25 ? '#D97706' :
+    pct >= 0.66 ? '#7CC6FF' :
+    pct >= 0.33 ? '#D97706' :
     '#C84B31'
+
+  const textColor =
+    pct >= 0.66 ? '#4A9CC8' :
+    pct >= 0.33 ? '#D97706' :
+    '#C84B31'
+
+  const hint =
+    pct >= 0.66 ? "You've got this!" :
+    pct >= 0.33 ? 'Tick tock…' :
+    'Last chance!'
 
   return (
     <div className="w-full space-y-1.5">
@@ -56,13 +66,13 @@ export default function TimerBar({ totalSec, running, onTick, onExpire }: TimerB
           style={{
             fontFamily: "'Fredoka', sans-serif",
             fontSize: '1rem',
-            color: pct > 0.5 ? '#2D6A4F' : pct > 0.25 ? '#D97706' : '#C84B31',
+            color: textColor,
           }}
         >
           {remaining}s
         </span>
         <span className="text-xs text-[#A09080]">
-          {pct > 0.5 ? 'Keep going!' : pct > 0.25 ? 'Hurry up!' : 'Almost out!'}
+          {hint}
         </span>
       </div>
       <div className="h-3 w-full rounded-full bg-[#E8E0D5] overflow-hidden border border-[#D4C8BA]">

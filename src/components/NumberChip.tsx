@@ -13,7 +13,7 @@ export default function NumberChip({ value, used, onClick }: NumberChipProps) {
       disabled={used}
       aria-label={`Number ${value}${used ? ', already used' : ''}`}
       className={cn(
-        'flex items-center justify-center rounded-full select-none',
+        'flex items-center justify-center rounded-xl select-none',
         'h-12 w-12 sm:h-14 sm:w-14',
         'transition-all duration-100 ease-out',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C84B31]',

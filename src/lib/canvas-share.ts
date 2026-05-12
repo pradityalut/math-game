@@ -20,13 +20,21 @@ export async function renderShareCard(data: ShareCardData): Promise<Blob> {
   const ctx = canvas.getContext('2d') as CanvasRenderingContext2D | null
   if (!ctx) throw new Error('Canvas context unavailable')
 
+  const isPerfect = data.stars === 3
+
   // Background — warm paper
   ctx.fillStyle = '#FAF7F2'
   ctx.fillRect(0, 0, W, H)
 
-  // Top accent bar (tier color)
+  // Top accent bar (tier color) — 16px for bold presence
   ctx.fillStyle = tierColor(data.tier)
-  ctx.fillRect(0, 0, W, 12)
+  ctx.fillRect(0, 0, W, 16)
+
+  // Win Lime accent stripe for perfect solve
+  if (isPerfect) {
+    ctx.fillStyle = '#C9FF3D'
+    ctx.fillRect(0, 16, W, 6)
+  }
 
   ctx.textAlign = 'center'
 
@@ -40,14 +48,14 @@ export async function renderShareCard(data: ShareCardData): Promise<Blob> {
   ctx.font = '500 28px Nunito, system-ui, sans-serif'
   ctx.fillText(`${data.tier.toUpperCase()} · made ${data.target}`, W / 2, 165)
 
-  // Target number — large
-  ctx.fillStyle = '#C84B31'
+  // Target number — Live Coral for social vibrancy
+  ctx.fillStyle = '#FF6A3D'
   ctx.font = '700 180px Fredoka, system-ui, sans-serif'
   ctx.fillText(String(data.target), W / 2, 350)
 
-  // Stars
+  // Stars — Win Lime for perfect, Amber otherwise
   const stars = STAR.repeat(data.stars) + EMPTY_STAR.repeat(3 - data.stars)
-  ctx.fillStyle = '#D97706'
+  ctx.fillStyle = isPerfect ? '#C9FF3D' : '#D97706'
   ctx.font = '600 80px system-ui, sans-serif'
   ctx.fillText(stars, W / 2, 445)
 
@@ -90,6 +98,8 @@ function tierColor(tier: string): string {
       return '#D97706'
     case 'hard':
       return '#C84B31'
+    case '24':
+      return '#5B21B6'
     default:
       return '#1A1A2E'
   }

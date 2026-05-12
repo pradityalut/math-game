@@ -20,7 +20,7 @@ export default function ExpressionField({ tokens, state, submitFeedback }: Expre
   return (
     <div
       className={cn(
-        'w-full min-h-[3.75rem] rounded-2xl px-4 py-3 flex items-center justify-between gap-3 transition-colors duration-150',
+        'w-full min-h-[3.75rem] rounded-xl px-4 py-3 flex items-center justify-between gap-3 transition-colors duration-150',
       )}
       style={{
         background: '#FFFFFF',

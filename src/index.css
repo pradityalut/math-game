@@ -15,6 +15,11 @@
   --color-border:      #E8E0D5;
   --color-amber:       #D97706;
 
+  /* Modern pop accents — selective use only (see DESIGN.md §2) */
+  --color-win-lime:    #C9FF3D;
+  --color-sky-info:    #7CC6FF;
+  --color-live-coral:  #FF6A3D;
+
   --font-display:      'Fredoka', sans-serif;
   --font-body:         'Nunito', sans-serif;
 }
@@ -60,4 +65,23 @@ body {
   0%   { transform: scale(0.8); opacity: 0; }
   60%  { transform: scale(1.08); }
   100% { transform: scale(1);   opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes slideUp {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes shake {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.6; }
+  }
+  @keyframes popIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
