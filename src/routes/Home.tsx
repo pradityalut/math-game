@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useProgress } from '../store/progress'
 import { useSession } from '../store/session'
 import LevelCard from '../components/LevelCard'
+import SupportCard from '../components/SupportCard'
 import { Button, Tabs, Card } from '../components/ui'
 import type { TabSpec } from '../components/ui'
 import levels from '../data/levels.json'
@@ -112,6 +113,7 @@ export default function Home() {
               />
             ))}
           </div>
+          <SupportCard />
 
           <p className="text-center text-xs text-[#C8B8A2] mt-auto pb-2">
             No sign-up · Progress saved on this device
