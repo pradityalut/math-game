@@ -8,3 +8,5 @@ dist
 
 # TypeScript build info
 *.tsbuildinfo
+
+.claude/
