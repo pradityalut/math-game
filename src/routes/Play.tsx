@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import * as audio from '../lib/audio'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useProgress } from '../store/progress'
 import { useSession } from '../store/session'
@@ -59,6 +60,7 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
   const [pendingSolve, setPendingSolve] = useState(false)
 
   const elapsedRef = useRef(0)
+  const lastTickedSec = useRef<number | null>(null)
 
   const usedChips = useMemo(() => usedChipIndices(tokens), [tokens])
   const wellFormed = useMemo(() => isWellFormed(tokens), [tokens])
@@ -88,6 +90,7 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
     setPendingSolve(false)
     setElapsedSec(0)
     elapsedRef.current = 0
+    lastTickedSec.current = null
     setPointsEarned(0)
     setRunning(false)
     setCountdown(3)
@@ -103,6 +106,7 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
     setPendingSolve(false)
     setElapsedSec(0)
     elapsedRef.current = 0
+    lastTickedSec.current = null
     setPointsEarned(0)
     setRunning(false)
     setCountdown(3)
@@ -133,7 +137,20 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
     setRunning(false)
     setExpired(true)
     if (level) setExampleSolution(solve(level.numbers, level.target))
+    if (useProgress.getState().settings.sfxOn) audio.playTimeUp()
   }
+
+  // Countdown tick SFX: fire once per integer second in last 10s
+  useEffect(() => {
+    if (!level || !running) return
+    const remaining = Math.ceil(level.timeLimitSec - elapsedSec)
+    if (remaining <= 0 || remaining > 10) return
+    if (remaining === lastTickedSec.current) return
+    lastTickedSec.current = remaining
+    if (!useProgress.getState().settings.sfxOn) return
+    if (remaining <= 3) audio.playTickAccent()
+    else audio.playTick()
+  }, [elapsedSec, running, level])
 
   function pushToken(t: Token) {
     if (solved || expired || pendingSolve || countdown !== null) return
@@ -194,6 +211,7 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
     setTimeout(() => {
       setPendingSolve(false)
       setSolved(true)
+      if (useProgress.getState().settings.sfxOn) audio.playWin()
       setPointsEarned(pts)
       recordSolve(level.id, s)
       if (!level.id.startsWith('daily')) addScore(level.tier, pts)

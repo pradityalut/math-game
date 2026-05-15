@@ -55,13 +55,13 @@ Game24/
 │   └── favicon.svg
 └── src/
     ├── main.tsx                # createRoot → <App/>
-    ├── App.tsx                 # BrowserRouter + 4 routes
+    ├── App.tsx                 # BrowserRouter + 4 routes + AudioBootstrap (first-gesture resume)
     ├── index.css               # Tailwind v4 entry
     ├── data/
     │   └── levels.json         # 32 level slots (8 per tier × 4 tiers) — metadata only
     ├── routes/
-    │   ├── Home.tsx            # tier tabs + level grid + daily entry
-    │   ├── Play.tsx            # main gameplay screen (430 LoC)
+    │   ├── Home.tsx            # tier tabs + level grid + daily entry + SoundToggles
+    │   ├── Play.tsx            # main gameplay screen; tick/win/time-up SFX
     │   ├── DailyPlay.tsx       # daily-puzzle wrapper around Play
     │   └── Share.tsx           # share landing (stub)
     ├── components/
@@ -72,7 +72,8 @@ Game24/
     │   ├── ExpressionField.tsx
     │   ├── TimerBar.tsx
     │   ├── StarRow.tsx
-    │   └── ResultModal.tsx
+    │   ├── ResultModal.tsx
+    │   └── SoundToggles.tsx    # SFX + BGM icon toggles rendered in Home header
     ├── engine/
     │   ├── types.ts            # Op, Paren, Token, Tier, LevelSlot, Level, LevelResult, PlayerProgress, ShareCardData
     │   ├── expression.ts       # tokens → eval, validation, star calc
@@ -83,10 +84,12 @@ Game24/
     │   └── solver.test.ts
     ├── lib/
     │   ├── prng.ts             # mulberry32, hashDateString, todayUTC
+    │   ├── audio.ts            # Web Audio API singleton; playTick/playWin/playTimeUp/startBgm/stopBgm
     │   ├── canvas-share.ts     # client-side PNG share-card render
     │   └── cn.ts               # clsx + tailwind-merge helper
     ├── store/
-    │   ├── progress.ts         # Zustand + persist — persisted player progress
+    │   ├── progress.ts         # Zustand + persist — persisted player progress; toggleSfx/toggleBgm actions
+    │   ├── progress.test.ts    # tests for toggleSfx, toggleBgm, v1→v2 migrator
     │   └── session.ts          # Zustand (no persist) — per-session tier scores
     └── test/
         └── setup.ts            # @testing-library/jest-dom setup
@@ -118,9 +121,9 @@ Game24/
   - Depends on: `react-router-dom`
   - Depended on by: `App`
 
-- [src/store/progress.ts](src/store/progress.ts) — `useProgress` — Zustand store with `persist` middleware (key `mathdash:progress`); actions: `recordSolve`, `recordDailyPlay`, `markVisited`, `isUnlocked` (true if `visited || solved`), `getLevelResult`, `resetAll`.
-  - Depends on: `zustand`, `engine/types`
-  - Depended on by: `routes/Home`, `routes/Play`, `routes/DailyPlay`
+- [src/store/progress.ts](src/store/progress.ts) — `useProgress` — Zustand store with `persist` middleware (key `mathdash:progress`, version 2); actions: `recordSolve`, `recordDailyPlay`, `markVisited`, `isUnlocked` (true if `visited || solved`), `getLevelResult`, `resetAll`, `toggleSfx`, `toggleBgm`. `toggleBgm` has audio side-effect (`startBgm`/`stopBgm`).
+  - Depends on: `zustand`, `engine/types`, `lib/audio`
+  - Depended on by: `routes/Home`, `routes/Play`, `routes/DailyPlay`, `components/SoundToggles`
 
 - [src/store/session.ts](src/store/session.ts) — `useSession` — Zustand store (NOT persisted) tracking per-tier `tierScores`; actions: `addScore`, `resetTier`, `getTierScore`. Scores reset on page reload by design.
   - Depends on: `zustand`, `engine/types`
@@ -146,6 +149,10 @@ Game24/
   - Depends on: `lib/prng`, `engine/solver`, `engine/types`
   - Depended on by: `routes/DailyPlay`
 
+- [src/lib/audio.ts](src/lib/audio.ts) — `resumeContext`, `playTick`, `playTickAccent`, `playWin`, `playTimeUp`, `startBgm`, `stopBgm` — singleton Web Audio API module; all sounds synthesized at runtime (no asset files). SFX gating is caller responsibility; BGM functions are self-gated via internal `bgmNodes` state.
+  - Depends on: Web Audio API (browser)
+  - Depended on by: `store/progress`, `routes/Play`, `App`
+
 - [src/lib/prng.ts](src/lib/prng.ts) — `mulberry32`, `hashDateString`, `todayUTC` — deterministic PRNG + date helpers.
   - Depends on: —
   - Depended on by: `engine/daily`, `routes/DailyPlay`
@@ -157,6 +164,10 @@ Game24/
 - [src/lib/cn.ts](src/lib/cn.ts) — `cn(...inputs)` — class-name merge helper.
   - Depends on: `clsx`, `tailwind-merge`
   - Depended on by: most components + routes
+
+- [src/components/SoundToggles.tsx](src/components/SoundToggles.tsx) — `SoundToggles` — two icon buttons (SFX toggle 🔊/🔇, BGM toggle 🎵/🎶) rendered in Home header. Reads `sfxOn`/`bgmOn` from `useProgress`; calls `toggleSfx`/`toggleBgm` actions.
+  - Depends on: `store/progress`
+  - Depended on by: `routes/Home`
 
 - [src/components/LevelCard.tsx](src/components/LevelCard.tsx) — `LevelCard` — clickable card showing stars + lock state; navigates to play.
   - Depends on: `react-router-dom`, `StarRow`, `engine/types`, `lib/cn`
@@ -178,7 +189,7 @@ Game24/
   - `LevelSlot { id, tier, index, timeLimitSec }` — what ships in [src/data/levels.json](src/data/levels.json) (32 entries, 8 per tier).
   - `Level extends LevelSlot { target, numbers[4], allowedOps[] }` — runtime-only; produced by `generatePuzzle` / `getDailyPuzzle`. Never persisted.
   - `LevelResult { solved, visited, stars: 0|1|2|3, solvedAt }` — keyed by level id within `PlayerProgress`. `visited` is set when Play mounts; `solved` is set on win. `bestTimeSec` no longer tracked.
-  - `PlayerProgress { version, levels, dailyStreak: { lastPlayedDate, count }, settings: { soundOn, theme } }` — persisted to localStorage at `mathdash:progress`.
+  - `PlayerProgress { version: 2, levels, dailyStreak: { lastPlayedDate, count }, settings: { sfxOn, bgmOn, theme } }` — persisted to localStorage at `mathdash:progress`. Version 2 replaces `soundOn` (version 1) with `sfxOn` + `bgmOn`; migrator handles existing records.
   - `tierScores: Partial<Record<Tier, number>>` — in-memory session state in `useSession`, not persisted.
   - `Token = { kind:'num', value, chipIdx } | { kind:'op', value:Op } | { kind:'paren', value:Paren }` — in-memory expression model.
   - `ShareCardData` — ephemeral, generated per solve.
@@ -206,7 +217,7 @@ No backend, analytics, payment, or auth integrations exist (all deferred per [PR
 - [MED] No automated solvability check for shipped slots — but the static `levels.json` no longer carries puzzles, so this risk has shifted: it now lives in the two runtime generators ([engine/puzzle.ts](src/engine/puzzle.ts), [engine/daily.ts](src/engine/daily.ts)), each of which falls back to a hard-coded puzzle (`[3,8,3,8]` target 24 / `[3,7,8,12]` target 24) after a bounded attempt loop. Fallbacks are reachable but untested.
 - [MED] No difficulty calibration. `generatePuzzle('easy')` and `generatePuzzle('medium')` use the same number pool and target range — the only knob that differs across non-hard tiers is `timeLimitSec` from `levels.json`. Tier label and actual difficulty can diverge.
 - [MED] [src/routes/Play.tsx](src/routes/Play.tsx) is 430 LoC and concentrates puzzle generation, input handling, timer, evaluation, scoring, and persistence — largest file, highest change-amplification risk; ripe for extraction into hooks.
-- [MED] `useProgress` `persist` declares `version: 1` but no migration function — and the `LevelResult` shape recently gained `visited` / dropped `bestTimeSec`. Existing localStorage records from earlier builds will load with `visited: undefined`, which silently flows through `isUnlocked` as `false` — meaning returning players may see previously-unlocked levels relocked unless they had `solved: true`.
+- [MED] `useProgress` `persist` is now at `version: 2` with a migrator that handles `soundOn → sfxOn/bgmOn`. However, `LevelResult` shape (`visited` added, `bestTimeSec` dropped) still has no migrator — existing records will have `visited: undefined`, silently flowing through `isUnlocked` as `false`. Returning players without `solved: true` may see relocked levels.
 - [MED] [src/lib/canvas-share.ts](src/lib/canvas-share.ts) has no test coverage; PNG output relies on Canvas behavior that varies across browsers (especially mobile Safari).
 - [LOW] `useSession` is in-memory only by design (scores reset per page load). If this is intentional it should be documented in `Home.tsx`; otherwise add `persist`.
 - [LOW] No tests for routes, components, stores, puzzle generator, daily generator, or PRNG — only `engine/expression` and `engine/solver` are covered.

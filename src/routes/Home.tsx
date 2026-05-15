@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useProgress } from '../store/progress'
 import { useSession } from '../store/session'
 import LevelCard from '../components/LevelCard'
+import SoundToggles from '../components/SoundToggles'
 import SupportCard from '../components/SupportCard'
 import { Button, Tabs, Card } from '../components/ui'
 import type { TabSpec } from '../components/ui'
@@ -50,7 +51,10 @@ export default function Home() {
       <div className="grid grid-cols-12">
         <div className="col-span-12 md:col-start-3 md:col-span-8 lg:col-start-4 lg:col-span-6 flex flex-col gap-7">
           {/* Header */}
-          <div className="text-center space-y-0.5">
+          <div className="relative text-center space-y-0.5">
+            <div className="absolute right-0 top-0">
+              <SoundToggles />
+            </div>
             <h1
               className="text-5xl font-bold text-[#1C1917]"
               style={{ fontFamily: "'Fredoka', sans-serif", letterSpacing: '-0.5px' }}

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { LevelResult, PlayerProgress } from '../engine/types'
+import * as audio from '../lib/audio'
 
 interface ProgressActions {
   recordSolve: (id: string, stars: 1 | 2 | 3) => void
@@ -9,15 +10,17 @@ interface ProgressActions {
   isUnlocked: (id: string) => boolean
   getLevelResult: (id: string) => LevelResult | undefined
   resetAll: () => void
+  toggleSfx: () => void
+  toggleBgm: () => void
 }
 
 type ProgressStore = PlayerProgress & ProgressActions
 
 const initial: PlayerProgress = {
-  version: 1,
+  version: 2,
   levels: {},
   dailyStreak: { lastPlayedDate: '', count: 0 },
-  settings: { soundOn: true, theme: 'default' },
+  settings: { sfxOn: true, bgmOn: false, theme: 'default' },
 }
 
 export const useProgress = create<ProgressStore>()(
@@ -75,10 +78,34 @@ export const useProgress = create<ProgressStore>()(
       resetAll() {
         set(initial)
       },
+
+      toggleSfx() {
+        set((s) => ({ settings: { ...s.settings, sfxOn: !s.settings.sfxOn } }))
+      },
+
+      toggleBgm() {
+        set((s) => {
+          const next = !s.settings.bgmOn
+          if (next) audio.startBgm()
+          else audio.stopBgm()
+          return { settings: { ...s.settings, bgmOn: next } }
+        })
+      },
     }),
     {
       name: 'mathdash:progress',
-      version: 1,
+      version: 2,
+      migrate(persisted: unknown, fromVersion: number) {
+        const p = persisted as Record<string, unknown>
+        if (fromVersion < 2) {
+          const settings = (p.settings ?? {}) as Record<string, unknown>
+          const soundOn = typeof settings.soundOn === 'boolean' ? settings.soundOn : true
+          const { soundOn: _removed, ...rest } = settings
+          void _removed
+          p.settings = { ...rest, sfxOn: soundOn, bgmOn: false }
+        }
+        return p as unknown as PlayerProgress
+      },
     }
   )
 )

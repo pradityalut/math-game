@@ -29,10 +29,10 @@ export interface LevelResult {
 }
 
 export interface PlayerProgress {
-  version: 1
+  version: 2
   levels: Record<string, LevelResult>
   dailyStreak: { lastPlayedDate: string; count: number }
-  settings: { soundOn: boolean; theme: string }
+  settings: { sfxOn: boolean; bgmOn: boolean; theme: string }
 }
 
 export interface ShareCardData {
