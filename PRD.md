@@ -45,11 +45,11 @@ Level extends LevelSlot   // generated at runtime per access
   allowedOps: Op[]       // all four ops for all tiers
 
 Tier puzzle rules
-  easy   — numbers 1–13, target 6–100, time 90s
+  easy   — numbers 1–13, target 6–50,  time 90s
   medium — numbers 1–13, target 6–100, time 60s
-  hard   — numbers 1–13, target 6–999, time 60s
+  hard   — numbers 1–13, target 6–100, time 45s
   24     — numbers 1–9,  target = 24 (fixed), time 90s
-  daily  — Easy rules (numbers 1–13, target 6–100), seeded by UTC date, time 90s
+  daily  — Easy rules (numbers 1–13, target 6–100), seeded by UTC date, time 90s (drops to 60s once dailyStreak.count ≥ 10)
 
 PlayerProgress           // single object keyed "mathdash:progress"
   levels: Record<levelId, LevelResult>

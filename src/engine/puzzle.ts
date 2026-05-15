@@ -21,8 +21,8 @@ export function generatePuzzle(tier: Tier): { numbers: number[]; target: number;
     return { numbers: [3, 8, 3, 8], target: 24, allowedOps: ALL_OPS }
   }
 
-  // Easy and Medium: target capped at 100; Hard: target up to 999
-  const maxTarget = tier === 'hard' ? 999 : 100
+  // Easy: target ≤ 50; Medium and Hard: target ≤ 100
+  const maxTarget = tier === 'easy' ? 50 : 100
 
   for (let attempt = 0; attempt < 200; attempt++) {
     const numbers = Array.from({ length: 4 }, () => pickRandom(NUMBER_POOL))
