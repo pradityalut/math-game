@@ -25,6 +25,20 @@ Bias toward caution over speed; for trivial tasks, use judgment.
 - Remove only imports/variables/functions that YOUR changes made unused.
 - Test: every changed line should trace directly to the user's request.
 
+## Documentation & Comments
+- Write a header doc (JSDoc) above a function when ANY apply:
+  - Body is ≥ ~20 lines.
+  - Has more than one logical phase (e.g. validate → transform → side-effect).
+  - Exported and used across files (public module API).
+- Header doc must contain: one-line description of what it does, parameter meanings (not types — TS handles that), return meaning (not type).
+- Skip header doc for: small event handlers, inline callbacks, trivial getters/setters, functions < 10 lines with a self-explanatory name.
+  - `function handleBackspace() { ... }` → no doc needed.
+  - `export function solve(numbers, target, ops)` → doc needed (exported, 30 lines, multi-step recursion).
+- Inline comments inside a function: ONLY when the WHY isn't visible from the code — bug workaround, hidden invariant, why algorithm A over B, non-obvious edge case.
+  - `// stop timer immediately so the 600ms delay doesn't inflate elapsed time` → keep (non-obvious WHY).
+  - `// increment counter` → delete (restates the code).
+  - `// added for task X / fix for PR #123` → never write (rots).
+
 ## Goal-Driven Execution
 - Transform tasks into verifiable goals before starting:
   - "Fix the bug" → "Reproduce it, identify root cause, verify fix doesn't break adjacent flows"
