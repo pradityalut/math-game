@@ -8,9 +8,14 @@ export default function DailyPlay() {
   const today = todayUTC()
   const { recordDailyPlay, dailyStreak } = useProgress()
   const level = useMemo(() => {
+    const yesterday = new Date()
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1)
+    const yesterdayStr = yesterday.toISOString().slice(0, 10)
+    const isActive = dailyStreak.lastPlayedDate === today || dailyStreak.lastPlayedDate === yesterdayStr
+    const activeCount = isActive ? dailyStreak.count : 0
     const base = getDailyPuzzle(today)
-    return dailyStreak.count >= 10 ? { ...base, timeLimitSec: 60 } : base
-  }, [today, dailyStreak.count])
+    return activeCount >= 10 ? { ...base, timeLimitSec: 60 } : base
+  }, [today, dailyStreak.lastPlayedDate, dailyStreak.count])
 
   function handleSolve() {
     recordDailyPlay(today)

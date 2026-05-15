@@ -56,6 +56,7 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
   const [exampleSolution, setExampleSolution] = useState<string[] | null>(null)
   const [submitFlash, setSubmitFlash] = useState<null | 'incomplete'>(null)
   const [submitFeedback, setSubmitFeedback] = useState<{ value: number; correct: boolean } | null>(null)
+  const [pendingSolve, setPendingSolve] = useState(false)
 
   const elapsedRef = useRef(0)
 
@@ -84,6 +85,7 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
     setTokens([])
     setExpired(false)
     setSolved(false)
+    setPendingSolve(false)
     setElapsedSec(0)
     elapsedRef.current = 0
     setPointsEarned(0)
@@ -98,6 +100,7 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
     setTokens([])
     setExpired(false)
     setSolved(false)
+    setPendingSolve(false)
     setElapsedSec(0)
     elapsedRef.current = 0
     setPointsEarned(0)
@@ -133,7 +136,7 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
   }
 
   function pushToken(t: Token) {
-    if (solved || expired || countdown !== null) return
+    if (solved || expired || pendingSolve || countdown !== null) return
     setSubmitFlash(null)
     setSubmitFeedback(null)
     setTokens((prev) => [...prev, t])
@@ -153,28 +156,23 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
   }
 
   function handleBackspace() {
-    if (solved || expired) return
+    if (solved || expired || pendingSolve) return
     setSubmitFlash(null)
     setSubmitFeedback(null)
     setTokens((prev) => prev.slice(0, -1))
   }
 
   function handleClear() {
-    if (solved || expired) return
+    if (solved || expired || pendingSolve) return
     setSubmitFlash(null)
     setSubmitFeedback(null)
     setTokens([])
   }
 
   function handleSubmit() {
-    if (solved || expired || !level) return
+    if (solved || expired || pendingSolve || !level) return
 
-    if (!complete || !wellFormed) {
-      setSubmitFlash('incomplete')
-      setTimeout(() => setSubmitFlash(null), 600)
-      return
-    }
-    if (!allUsed) {
+    if (!complete || !wellFormed || !allUsed) {
       setSubmitFlash('incomplete')
       setTimeout(() => setSubmitFlash(null), 600)
       return
@@ -190,20 +188,33 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
     const s = calcStars(elapsed, level.timeLimitSec)
     const pts = Math.max(0, Math.round(level.timeLimitSec - elapsed))
     setRunning(false)
-    setSolved(true)
-    setPointsEarned(pts)
-    recordSolve(level.id, s)
-    if (!level.id.startsWith('daily')) addScore(level.tier, pts)
-    onSolve?.()
-    setShareData({
-      levelId: level.id,
-      tier: level.tier,
-      target: level.target,
-      timeSec: Math.round(elapsed * 10) / 10,
-      stars: s,
-      expression: `${tokensToString(tokens)} = ${level.target}`,
-    })
+    setPendingSolve(true)
+    setSubmitFeedback({ value: level.target, correct: true })
+
+    setTimeout(() => {
+      setPendingSolve(false)
+      setSolved(true)
+      setPointsEarned(pts)
+      recordSolve(level.id, s)
+      if (!level.id.startsWith('daily')) addScore(level.tier, pts)
+      onSolve?.()
+      setShareData({
+        levelId: level.id,
+        tier: level.tier,
+        target: level.target,
+        timeSec: Math.round(elapsed * 10) / 10,
+        stars: s,
+        expression: `${tokensToString(tokens)} = ${level.target}`,
+      })
+    }, 600)
   }
+
+  // Auto-submit once all numbers are placed and expression is valid
+  useEffect(() => {
+    if (allUsed && complete && wellFormed && !solved && !expired && countdown === null) {
+      handleSubmit()
+    }
+  }, [allUsed, complete, wellFormed, solved, expired, countdown])
 
   const nextLevelPath = useCallback(() => {
     if (!level || level.id.startsWith('daily')) return null

@@ -45,7 +45,7 @@ Level extends LevelSlot   // generated at runtime per access
   allowedOps: Op[]       // all four ops for all tiers
 
 Tier puzzle rules
-  easy   — numbers 1–13, target 6–50,  time 90s
+  easy   — numbers 1–13, target 6–75,  time 90s
   medium — numbers 1–13, target 6–100, time 60s
   hard   — numbers 1–13, target 6–100, time 45s
   24     — numbers 1–9,  target = 24 (fixed), time 90s
