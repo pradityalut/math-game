@@ -1,13 +1,13 @@
 /**
- * Singleton Web Audio API module. All sounds are synthesized at runtime —
- * no external asset files required.
+ * Singleton Web Audio API module. SFX are synthesized at runtime; BGM is
+ * streamed from /audio/bgm.mp3 via HTMLAudioElement.
  *
  * Callers are responsible for checking settings.sfxOn before calling SFX
  * functions. BGM functions are self-gated via internal state.
  */
 
 let ctx: AudioContext | null = null
-let bgmNodes: { oscs: OscillatorNode[]; gain: GainNode } | null = null
+let bgmEl: HTMLAudioElement | null = null
 
 function getCtx(): AudioContext | null {
   try {
@@ -95,50 +95,31 @@ export function playTimeUp(): void {
 }
 
 /**
- * Start the ambient BGM loop (C-major pad: C3/E3/G3 detuned sine trio).
- * Idempotent — safe to call when already running.
+ * Start BGM playback from /audio/bgm.mp3.
+ * Idempotent — safe to call when already playing.
  */
 export function startBgm(): void {
-  const c = getCtx()
-  if (!c || bgmNodes) return
+  if (bgmEl) return
   try {
-    const freqs = [130.81, 164.81, 196.0] // C3, E3, G3
-    const detunes = [-5, 5, -3]
-    const gain = c.createGain()
-    gain.gain.setValueAtTime(0, c.currentTime)
-    gain.gain.linearRampToValueAtTime(0.08, c.currentTime + 1)
-    gain.connect(c.destination)
-
-    const oscs: OscillatorNode[] = freqs.map((freq, i) => {
-      const osc = c.createOscillator()
-      osc.type = 'sine'
-      osc.frequency.value = freq
-      osc.detune.value = detunes[i] ?? 0
-      osc.connect(gain)
-      osc.start()
-      return osc
+    bgmEl = new Audio('/audio/bgm.mp3')
+    bgmEl.loop = true
+    bgmEl.volume = 0.25
+    bgmEl.play().catch(() => {
+      // autoplay blocked — will retry on next user gesture via resumeContext
+      bgmEl = null
     })
-
-    bgmNodes = { oscs, gain }
   } catch {
-    // ignore
+    bgmEl = null
   }
 }
 
 /**
- * Stop the ambient BGM loop with a short fade-out.
+ * Stop BGM playback and release the element.
  * Idempotent — safe to call when already stopped.
  */
 export function stopBgm(): void {
-  const c = getCtx()
-  if (!c || !bgmNodes) return
-  try {
-    const { oscs, gain } = bgmNodes
-    gain.gain.setValueAtTime(gain.gain.value, c.currentTime)
-    gain.gain.linearRampToValueAtTime(0, c.currentTime + 0.5)
-    oscs.forEach((osc) => osc.stop(c.currentTime + 0.5))
-    bgmNodes = null
-  } catch {
-    bgmNodes = null
-  }
+  if (!bgmEl) return
+  bgmEl.pause()
+  bgmEl.currentTime = 0
+  bgmEl = null
 }
