@@ -18,6 +18,7 @@ import {
   tokensToString,
 } from '../engine/expression'
 import { generatePuzzle } from '../engine/puzzle'
+import { solve } from '../engine/solver'
 import type { Level, LevelSlot, Op, Paren, Token, ShareCardData } from '../engine/types'
 import levels from '../data/levels.json'
 import { cn } from '../lib/cn'
@@ -52,6 +53,7 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
   const [elapsedSec, setElapsedSec] = useState(0)
   const [countdown, setCountdown] = useState<number | null>(null)
   const [shareData, setShareData] = useState<ShareCardData | null>(null)
+  const [exampleSolution, setExampleSolution] = useState<string[] | null>(null)
   const [submitFlash, setSubmitFlash] = useState<null | 'incomplete'>(null)
   const [submitFeedback, setSubmitFeedback] = useState<{ value: number; correct: boolean } | null>(null)
 
@@ -87,6 +89,7 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
     setPointsEarned(0)
     setRunning(false)
     setCountdown(3)
+    setExampleSolution(null)
   }, [slot?.id, levelOverride])
 
   // Reset UI state when daily level loads
@@ -100,6 +103,7 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
     setPointsEarned(0)
     setRunning(false)
     setCountdown(3)
+    setExampleSolution(null)
   }, [levelOverride?.id])
 
   // Countdown ticker: 3 → 2 → 1 → 0 ("GO!") → null + start
@@ -122,7 +126,11 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
   }, [level?.id])
 
   function handleTick(e: number) { elapsedRef.current = e; setElapsedSec(e) }
-  function handleExpire() { setRunning(false); setExpired(true) }
+  function handleExpire() {
+    setRunning(false)
+    setExpired(true)
+    if (level) setExampleSolution(solve(level.numbers, level.target))
+  }
 
   function pushToken(t: Token) {
     if (solved || expired || countdown !== null) return
@@ -396,6 +404,7 @@ export default function Play({ levelOverride, onSolve }: PlayProps) {
               stars={0}
               timeSec={Math.round(elapsedSec * 10) / 10}
               nextLevelPath={nextLevelPath()}
+              exampleSolution={exampleSolution ?? undefined}
             />
           )}
 

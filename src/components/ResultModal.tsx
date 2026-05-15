@@ -13,6 +13,7 @@ interface ResultModalProps {
   pointsEarned?: number
   tierTotal?: number
   expired?: boolean
+  exampleSolution?: string[]
 }
 
 const STAR_MESSAGES: Record<0 | 1 | 2 | 3, string> = {
@@ -22,7 +23,11 @@ const STAR_MESSAGES: Record<0 | 1 | 2 | 3, string> = {
   3: 'Perfect! 🔥',
 }
 
-export default function ResultModal({ timeSec, stars, nextLevelPath, shareData, pointsEarned, tierTotal, expired }: ResultModalProps) {
+function formatStep(step: string): string {
+  return step.replace(/\*/g, '×').replace(/\//g, '÷')
+}
+
+export default function ResultModal({ timeSec, stars, nextLevelPath, shareData, pointsEarned, tierTotal, expired, exampleSolution }: ResultModalProps) {
   const navigate = useNavigate()
   const [sharing, setSharing] = useState(false)
   const [shared, setShared] = useState(false)
@@ -87,6 +92,30 @@ export default function ResultModal({ timeSec, stars, nextLevelPath, shareData, 
       <div className="flex justify-center py-1">
         <StarRow stars={stars} size="lg" />
       </div>
+
+      {/* Example solution for expired */}
+      {expired && exampleSolution && (
+        <div
+          className="rounded-xl px-4 py-3 space-y-1"
+          style={{ background: '#F5F0EB' }}
+        >
+          <p
+            className="text-xs font-semibold uppercase tracking-wider text-[#A09080] mb-1"
+            style={{ fontFamily: "'Nunito', sans-serif" }}
+          >
+            One way to solve it
+          </p>
+          {exampleSolution.map((step, i) => (
+            <p
+              key={i}
+              className="text-sm font-medium text-[#1C1917]"
+              style={{ fontFamily: "'Nunito', sans-serif" }}
+            >
+              {formatStep(step)}
+            </p>
+          ))}
+        </div>
+      )}
 
       {/* Actions */}
       <div className="space-y-3">
